@@ -13,6 +13,15 @@ const questionNavigationButtons = Array.from(document.querySelectorAll(".questio
 const nextQuestionButton = document.getElementById("next-question-btn");
 const finishTestButton = document.getElementById("finish-test-btn");
 
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function shuffleArray(items) {
   const array = [...items];
 
@@ -42,11 +51,12 @@ function createSingleChoiceMarkup(question, questionNumber) {
     .map((option, optionIndex) => {
       const optionId = `q-${question.id}-single-${optionIndex}`;
       const isChecked = savedAnswer === option ? "checked" : "";
+      const safeOption = escapeHtml(option);
 
       return `
         <label for="${optionId}">
-          <input type="radio" id="${optionId}" name="question-${question.id}" value="${option}" ${isChecked}>
-          ${option}
+          <input type="radio" id="${optionId}" name="question-${question.id}" value="${safeOption}" ${isChecked}>
+          ${safeOption}
         </label>
       `;
     })
@@ -54,7 +64,7 @@ function createSingleChoiceMarkup(question, questionNumber) {
 
   return `
     <h2>Question ${questionNumber}</h2>
-    <p>${question.question}</p>
+    <p>${escapeHtml(question.question)}</p>
     <div>${optionsMarkup}</div>
   `;
 }
@@ -65,11 +75,12 @@ function createMultipleChoiceMarkup(question, questionNumber) {
     .map((option, optionIndex) => {
       const optionId = `q-${question.id}-multiple-${optionIndex}`;
       const isChecked = savedAnswers.includes(option) ? "checked" : "";
+      const safeOption = escapeHtml(option);
 
       return `
         <label for="${optionId}">
-          <input type="checkbox" id="${optionId}" name="question-${question.id}" value="${option}" ${isChecked}>
-          ${option}
+          <input type="checkbox" id="${optionId}" name="question-${question.id}" value="${safeOption}" ${isChecked}>
+          ${safeOption}
         </label>
       `;
     })
@@ -77,7 +88,7 @@ function createMultipleChoiceMarkup(question, questionNumber) {
 
   return `
     <h2>Question ${questionNumber}</h2>
-    <p>${question.question}</p>
+    <p>${escapeHtml(question.question)}</p>
     <div>${optionsMarkup}</div>
   `;
 }
@@ -87,9 +98,9 @@ function createTextMarkup(question, questionNumber) {
 
   return `
     <h2>Question ${questionNumber}</h2>
-    <p>${question.question}</p>
+    <p>${escapeHtml(question.question)}</p>
     <label for="q-${question.id}-text">Your answer:</label>
-    <input type="text" id="q-${question.id}-text" name="question-${question.id}" autocomplete="off" value="${savedAnswer}">
+    <input type="text" id="q-${question.id}-text" name="question-${question.id}" autocomplete="off" value="${escapeHtml(savedAnswer)}">
   `;
 }
 
