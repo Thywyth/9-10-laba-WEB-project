@@ -3,33 +3,33 @@
     {
       "id": "s1",
       "type": "single",
-      "question": "Which HTML tag is used for the largest heading?",
+      "question": "Який HTML-тег використовується для найбільшого заголовка?",
       "options": ["<h6>", "<heading>", "<h1>", "<head>"],
       "answer": "<h1>"
     },
     {
       "id": "s2",
       "type": "single",
-      "question": "What does CSS stand for?",
+      "question": "Як розшифровується CSS?",
       "options": [
-        "Creative Style Syntax",
-        "Cascading Style Sheets",
-        "Computer Style System",
-        "Colorful Style Structure"
+        "Творчий синтаксис стилів",
+        "Каскадні таблиці стилів",
+        "Комп'ютерна система стилів",
+        "Кольорова структура стилів"
       ],
-      "answer": "Cascading Style Sheets"
+      "answer": "Каскадні таблиці стилів"
     },
     {
       "id": "s3",
       "type": "single",
-      "question": "Which method converts JSON string to JavaScript object?",
+      "question": "Який метод перетворює JSON-рядок у JavaScript-об'єкт?",
       "options": ["JSON.stringify()", "JSON.parse()", "JSON.convert()", "JSON.objectify()"],
       "answer": "JSON.parse()"
     },
     {
       "id": "s4",
       "type": "single",
-      "question": "Which CSS property changes text color?",
+      "question": "Яка CSS-властивість змінює колір тексту?",
       "options": ["font-color", "text-style", "color", "text-color"],
       "answer": "color"
     }
@@ -38,38 +38,38 @@
     {
       "id": "m1",
       "type": "multiple",
-      "question": "Which of these are JavaScript data types?",
-      "options": ["String", "Boolean", "Selector", "Number"],
-      "answer": ["String", "Boolean", "Number"]
+      "question": "Які з наведених є типами даних JavaScript?",
+      "options": ["Рядок (String)", "Логічний (Boolean)", "Селектор (Selector)", "Число (Number)"],
+      "answer": ["Рядок (String)", "Логічний (Boolean)", "Число (Number)"]
     },
     {
       "id": "m2",
       "type": "multiple",
-      "question": "Which tags are semantic HTML elements?",
+      "question": "Які теги є семантичними елементами HTML?",
       "options": ["<article>", "<div>", "<section>", "<footer>"],
       "answer": ["<article>", "<section>", "<footer>"]
     },
     {
       "id": "m3",
       "type": "multiple",
-      "question": "Which methods can be used on arrays?",
+      "question": "Які методи можна використовувати для масивів?",
       "options": ["map()", "push()", "querySelector()", "filter()"],
       "answer": ["map()", "push()", "filter()"]
     },
     {
       "id": "m4",
       "type": "multiple",
-      "question": "Which statements about LocalStorage are true?",
+      "question": "Які твердження про LocalStorage є правильними?",
       "options": [
-        "Data is stored as strings",
-        "It works after page reload",
-        "Data is lost immediately on refresh",
-        "It can be accessed with localStorage API"
+        "Дані зберігаються як рядки",
+        "Працює після перезавантаження сторінки",
+        "Дані одразу зникають після оновлення",
+        "Доступний через API localStorage"
       ],
       "answer": [
-        "Data is stored as strings",
-        "It works after page reload",
-        "It can be accessed with localStorage API"
+        "Дані зберігаються як рядки",
+        "Працює після перезавантаження сторінки",
+        "Доступний через API localStorage"
       ]
     }
   ],
@@ -77,25 +77,25 @@
     {
       "id": "t1",
       "type": "text",
-      "question": "Write the CSS property used to make elements a flex container.",
+      "question": "Напиши CSS-властивість, яка робить елемент flex-контейнером.",
       "answer": "display: flex"
     },
     {
       "id": "t2",
       "type": "text",
-      "question": "Write the JavaScript keyword used to declare a constant variable.",
+      "question": "Напиши ключове слово JavaScript для оголошення константи.",
       "answer": "const"
     },
     {
       "id": "t3",
       "type": "text",
-      "question": "Write the event name that fires when a button is clicked.",
+      "question": "Напиши назву події, яка спрацьовує при натисканні кнопки.",
       "answer": "click"
     },
     {
       "id": "t4",
       "type": "text",
-      "question": "Write the browser API name used to save key-value data persistently.",
+      "question": "Напиши назву API браузера для збереження пар ключ-значення.",
       "answer": "localStorage"
     }
   ]

@@ -63,7 +63,7 @@ function createSingleChoiceMarkup(question, questionNumber) {
     .join("");
 
   return `
-    <h2>Question ${questionNumber}</h2>
+    <h2>Питання ${questionNumber}</h2>
     <p>${escapeHtml(question.question)}</p>
     <div>${optionsMarkup}</div>
   `;
@@ -87,7 +87,7 @@ function createMultipleChoiceMarkup(question, questionNumber) {
     .join("");
 
   return `
-    <h2>Question ${questionNumber}</h2>
+    <h2>Питання ${questionNumber}</h2>
     <p>${escapeHtml(question.question)}</p>
     <div>${optionsMarkup}</div>
   `;
@@ -97,9 +97,9 @@ function createTextMarkup(question, questionNumber) {
   const savedAnswer = userAnswers[question.id] || "";
 
   return `
-    <h2>Question ${questionNumber}</h2>
+    <h2>Питання ${questionNumber}</h2>
     <p>${escapeHtml(question.question)}</p>
-    <label for="q-${question.id}-text">Your answer:</label>
+    <label for="q-${question.id}-text">Ваша відповідь:</label>
     <input type="text" id="q-${question.id}-text" name="question-${question.id}" autocomplete="off" value="${escapeHtml(savedAnswer)}">
   `;
 }
@@ -252,11 +252,11 @@ function showResult(currentScore) {
 
   const previousText = previousResult
     ? `${previousResult.score}/${previousResult.total}`
-    : "No previous result";
+    : "Немає попереднього результату";
 
   resultContainer.innerHTML = `
-    <p>Current result: <strong>${currentScore}/${selectedQuestions.length}</strong></p>
-    <p>Previous result: <strong>${previousText}</strong></p>
+    <p>Поточний результат: <strong>${currentScore}/${selectedQuestions.length}</strong></p>
+    <p>Попередній результат: <strong>${previousText}</strong></p>
   `;
 }
 
