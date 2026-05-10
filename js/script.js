@@ -113,13 +113,16 @@ function updateNavigationState() {
 
 function updateFinishButtonVisibility() {
   const onLastQuestion = currentQuestionIndex === selectedQuestions.length - 1;
-  const allQuestionsViewed = viewedQuestions.size === selectedQuestions.length;
 
-  if (!finishTestButton) {
+  if (finishTestButton) {
+    finishTestButton.hidden = !onLastQuestion;
+  }
+
+  if (!nextQuestionButton) {
     return;
   }
 
-  finishTestButton.hidden = !(onLastQuestion || allQuestionsViewed);
+  nextQuestionButton.hidden = onLastQuestion;
 }
 
 function renderQuestion(index) {
