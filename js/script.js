@@ -4,8 +4,12 @@ const QUESTIONS_PER_GROUP = 2;
 let selectedQuestions = [];
 let currentQuestionIndex = 0;
 const userAnswers = {};
+const viewedQuestions = new Set();
 
 const questionContainer = document.getElementById("question-container");
+const questionNavigationButtons = Array.from(document.querySelectorAll(".question-number"));
+const nextQuestionButton = document.getElementById("next-question-btn");
+const finishTestButton = document.getElementById("finish-test-btn");
 
 function shuffleArray(items) {
   const array = [...items];
@@ -31,13 +35,15 @@ function buildFinalQuestionSet(questionGroups) {
 }
 
 function createSingleChoiceMarkup(question, questionNumber) {
+  const savedAnswer = userAnswers[question.id];
   const optionsMarkup = question.options
     .map((option, optionIndex) => {
       const optionId = `q-${question.id}-single-${optionIndex}`;
+      const isChecked = savedAnswer === option ? "checked" : "";
 
       return `
         <label for="${optionId}">
-          <input type="radio" id="${optionId}" name="question-${question.id}" value="${option}">
+          <input type="radio" id="${optionId}" name="question-${question.id}" value="${option}" ${isChecked}>
           ${option}
         </label>
       `;
@@ -52,13 +58,15 @@ function createSingleChoiceMarkup(question, questionNumber) {
 }
 
 function createMultipleChoiceMarkup(question, questionNumber) {
+  const savedAnswers = Array.isArray(userAnswers[question.id]) ? userAnswers[question.id] : [];
   const optionsMarkup = question.options
     .map((option, optionIndex) => {
       const optionId = `q-${question.id}-multiple-${optionIndex}`;
+      const isChecked = savedAnswers.includes(option) ? "checked" : "";
 
       return `
         <label for="${optionId}">
-          <input type="checkbox" id="${optionId}" name="question-${question.id}" value="${option}">
+          <input type="checkbox" id="${optionId}" name="question-${question.id}" value="${option}" ${isChecked}>
           ${option}
         </label>
       `;
@@ -73,12 +81,32 @@ function createMultipleChoiceMarkup(question, questionNumber) {
 }
 
 function createTextMarkup(question, questionNumber) {
+  const savedAnswer = userAnswers[question.id] || "";
+
   return `
     <h2>Question ${questionNumber}</h2>
     <p>${question.question}</p>
     <label for="q-${question.id}-text">Your answer:</label>
-    <input type="text" id="q-${question.id}-text" name="question-${question.id}" autocomplete="off">
+    <input type="text" id="q-${question.id}-text" name="question-${question.id}" autocomplete="off" value="${savedAnswer}">
   `;
+}
+
+function updateNavigationState() {
+  questionNavigationButtons.forEach((button, index) => {
+    const isActive = index === currentQuestionIndex;
+    button.classList.toggle("is-active", isActive);
+  });
+}
+
+function updateFinishButtonVisibility() {
+  const onLastQuestion = currentQuestionIndex === selectedQuestions.length - 1;
+  const allQuestionsViewed = viewedQuestions.size === selectedQuestions.length;
+
+  if (!finishTestButton) {
+    return;
+  }
+
+  finishTestButton.hidden = !(onLastQuestion || allQuestionsViewed);
 }
 
 function renderQuestion(index) {
@@ -100,6 +128,9 @@ function renderQuestion(index) {
   }
 
   questionContainer.innerHTML = markup;
+  viewedQuestions.add(index);
+  updateNavigationState();
+  updateFinishButtonVisibility();
 }
 
 function handleQuestionInput() {
@@ -140,6 +171,28 @@ function handleQuestionInput() {
   });
 }
 
+function handleQuestionNavigation() {
+  questionNavigationButtons.forEach((button, index) => {
+    button.addEventListener("click", () => {
+      currentQuestionIndex = index;
+      renderQuestion(currentQuestionIndex);
+    });
+  });
+
+  if (nextQuestionButton) {
+    nextQuestionButton.addEventListener("click", () => {
+      const nextIndex = currentQuestionIndex + 1;
+
+      if (nextIndex >= selectedQuestions.length) {
+        return;
+      }
+
+      currentQuestionIndex = nextIndex;
+      renderQuestion(currentQuestionIndex);
+    });
+  }
+}
+
 async function loadQuestions() {
   try {
     const response = await fetch(QUESTIONS_SOURCE);
@@ -151,6 +204,7 @@ async function loadQuestions() {
     const questionGroups = await response.json();
     selectedQuestions = buildFinalQuestionSet(questionGroups);
     currentQuestionIndex = 0;
+    viewedQuestions.clear();
     renderQuestion(currentQuestionIndex);
   } catch (error) {
     console.error("Unable to load questions.", error);
@@ -158,4 +212,5 @@ async function loadQuestions() {
 }
 
 handleQuestionInput();
+handleQuestionNavigation();
 loadQuestions();
