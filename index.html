@@ -9,6 +9,7 @@
 <body>
   <main class="test-app">
     <h1>Тестування знань</h1>
+    <p id="timer-display" class="timer-display">Час проходження: 00:00</p>
 
     <nav class="question-navigation" aria-label="Навігація по питаннях">
       <button type="button" class="question-number" data-index="0">1</button>
@@ -26,6 +27,7 @@
     <div class="test-controls">
       <button type="button" id="next-question-btn">Наступне питання</button>
       <button type="button" id="finish-test-btn" hidden>Завершити тест</button>
+      <button type="button" id="retry-test-btn" hidden>Пройти ще раз</button>
     </div>
 
     <section id="result-container" aria-live="polite">

@@ -9,9 +9,15 @@ const viewedQuestions = new Set();
 
 const questionContainer = document.getElementById("question-container");
 const resultContainer = document.getElementById("result-container");
+const timerDisplay = document.getElementById("timer-display");
 const questionNavigationButtons = Array.from(document.querySelectorAll(".question-number"));
 const nextQuestionButton = document.getElementById("next-question-btn");
 const finishTestButton = document.getElementById("finish-test-btn");
+const retryTestButton = document.getElementById("retry-test-btn");
+
+let timerId = null;
+let startedAt = null;
+let elapsedSeconds = 0;
 
 function escapeHtml(value) {
   return String(value)
@@ -35,6 +41,45 @@ function shuffleArray(items) {
 
 function pickRandomQuestions(group, amount) {
   return shuffleArray(group).slice(0, amount);
+}
+
+function formatDuration(totalSeconds) {
+  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  return `${minutes}:${seconds}`;
+}
+
+function updateTimerText() {
+  if (!timerDisplay) {
+    return;
+  }
+
+  timerDisplay.textContent = `Час проходження: ${formatDuration(elapsedSeconds)}`;
+}
+
+function startTimer() {
+  if (timerId) {
+    clearInterval(timerId);
+  }
+
+  startedAt = Date.now();
+  elapsedSeconds = 0;
+  updateTimerText();
+
+  timerId = setInterval(() => {
+    elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
+    updateTimerText();
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerId) {
+    clearInterval(timerId);
+    timerId = null;
+  }
+
+  elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
+  updateTimerText();
 }
 
 function buildFinalQuestionSet(questionGroups) {
@@ -251,11 +296,12 @@ function showResult(currentScore) {
   const previousResult = previousResultRaw ? JSON.parse(previousResultRaw) : null;
 
   const previousText = previousResult
-    ? `${previousResult.score}/${previousResult.total}`
+    ? `${previousResult.score}/${previousResult.total} (час: ${previousResult.durationFormatted})`
     : "Немає попереднього результату";
 
   resultContainer.innerHTML = `
     <p>Поточний результат: <strong>${currentScore}/${selectedQuestions.length}</strong></p>
+    <p>Час проходження: <strong>${formatDuration(elapsedSeconds)}</strong></p>
     <p>Попередній результат: <strong>${previousText}</strong></p>
   `;
 }
@@ -264,6 +310,8 @@ function saveResult(currentScore) {
   const resultData = {
     score: currentScore,
     total: selectedQuestions.length,
+    durationSeconds: elapsedSeconds,
+    durationFormatted: formatDuration(elapsedSeconds),
     date: new Date().toISOString()
   };
 
@@ -292,10 +340,43 @@ function handleFinishTest() {
   }
 
   finishTestButton.addEventListener("click", () => {
+    stopTimer();
     const currentScore = calculateScore();
     showResult(currentScore);
     const resultData = saveResult(currentScore);
     exportResultToJson(resultData);
+
+    finishTestButton.hidden = true;
+    if (nextQuestionButton) {
+      nextQuestionButton.hidden = true;
+    }
+    if (retryTestButton) {
+      retryTestButton.hidden = false;
+    }
+  });
+}
+
+function resetQuizState() {
+  currentQuestionIndex = 0;
+  viewedQuestions.clear();
+  Object.keys(userAnswers).forEach((key) => delete userAnswers[key]);
+
+  if (resultContainer) {
+    resultContainer.innerHTML = "";
+  }
+
+  if (retryTestButton) {
+    retryTestButton.hidden = true;
+  }
+}
+
+function handleRetryTest() {
+  if (!retryTestButton) {
+    return;
+  }
+
+  retryTestButton.addEventListener("click", () => {
+    loadQuestions();
   });
 }
 
@@ -309,9 +390,9 @@ async function loadQuestions() {
 
     const questionGroups = await response.json();
     selectedQuestions = buildFinalQuestionSet(questionGroups);
-    currentQuestionIndex = 0;
-    viewedQuestions.clear();
+    resetQuizState();
     renderQuestion(currentQuestionIndex);
+    startTimer();
   } catch (error) {
     console.error("Unable to load questions.", error);
   }
@@ -320,4 +401,5 @@ async function loadQuestions() {
 handleQuestionInput();
 handleQuestionNavigation();
 handleFinishTest();
+handleRetryTest();
 loadQuestions();
