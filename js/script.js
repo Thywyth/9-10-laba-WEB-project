@@ -254,6 +254,22 @@ function saveResult(currentScore) {
   };
 
   localStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(resultData));
+  return resultData;
+}
+
+function exportResultToJson(resultData) {
+  const jsonString = JSON.stringify(resultData, null, 2);
+  const blob = new Blob([jsonString], { type: "application/json" });
+  const downloadUrl = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = downloadUrl;
+  link.download = "result.json";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(downloadUrl);
 }
 
 function handleFinishTest() {
@@ -264,7 +280,8 @@ function handleFinishTest() {
   finishTestButton.addEventListener("click", () => {
     const currentScore = calculateScore();
     showResult(currentScore);
-    saveResult(currentScore);
+    const resultData = saveResult(currentScore);
+    exportResultToJson(resultData);
   });
 }
 
