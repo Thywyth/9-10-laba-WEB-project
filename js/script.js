@@ -1,5 +1,6 @@
 const QUESTIONS_SOURCE = "data/questions.json";
 const QUESTIONS_PER_GROUP = 2;
+const RESULT_STORAGE_KEY = "quiz-last-result";
 
 let selectedQuestions = [];
 let currentQuestionIndex = 0;
@@ -7,6 +8,7 @@ const userAnswers = {};
 const viewedQuestions = new Set();
 
 const questionContainer = document.getElementById("question-container");
+const resultContainer = document.getElementById("result-container");
 const questionNavigationButtons = Array.from(document.querySelectorAll(".question-number"));
 const nextQuestionButton = document.getElementById("next-question-btn");
 const finishTestButton = document.getElementById("finish-test-btn");
@@ -193,6 +195,79 @@ function handleQuestionNavigation() {
   }
 }
 
+function areArraysEqual(first, second) {
+  if (!Array.isArray(first) || !Array.isArray(second) || first.length !== second.length) {
+    return false;
+  }
+
+  const firstSorted = [...first].sort();
+  const secondSorted = [...second].sort();
+
+  return firstSorted.every((item, index) => item === secondSorted[index]);
+}
+
+function isAnswerCorrect(question, userAnswer) {
+  if (question.type === "multiple") {
+    const selected = Array.isArray(userAnswer) ? userAnswer : [];
+    return areArraysEqual(selected, question.answer);
+  }
+
+  if (question.type === "text") {
+    const normalizedUserAnswer = String(userAnswer || "").trim().toLowerCase();
+    const normalizedCorrectAnswer = String(question.answer).trim().toLowerCase();
+    return normalizedUserAnswer === normalizedCorrectAnswer;
+  }
+
+  return userAnswer === question.answer;
+}
+
+function calculateScore() {
+  return selectedQuestions.reduce((score, question) => {
+    const userAnswer = userAnswers[question.id];
+    return isAnswerCorrect(question, userAnswer) ? score + 1 : score;
+  }, 0);
+}
+
+function showResult(currentScore) {
+  if (!resultContainer) {
+    return;
+  }
+
+  const previousResultRaw = localStorage.getItem(RESULT_STORAGE_KEY);
+  const previousResult = previousResultRaw ? JSON.parse(previousResultRaw) : null;
+
+  const previousText = previousResult
+    ? `${previousResult.score}/${previousResult.total}`
+    : "No previous result";
+
+  resultContainer.innerHTML = `
+    <p>Current result: <strong>${currentScore}/${selectedQuestions.length}</strong></p>
+    <p>Previous result: <strong>${previousText}</strong></p>
+  `;
+}
+
+function saveResult(currentScore) {
+  const resultData = {
+    score: currentScore,
+    total: selectedQuestions.length,
+    date: new Date().toISOString()
+  };
+
+  localStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(resultData));
+}
+
+function handleFinishTest() {
+  if (!finishTestButton) {
+    return;
+  }
+
+  finishTestButton.addEventListener("click", () => {
+    const currentScore = calculateScore();
+    showResult(currentScore);
+    saveResult(currentScore);
+  });
+}
+
 async function loadQuestions() {
   try {
     const response = await fetch(QUESTIONS_SOURCE);
@@ -213,4 +288,5 @@ async function loadQuestions() {
 
 handleQuestionInput();
 handleQuestionNavigation();
+handleFinishTest();
 loadQuestions();
