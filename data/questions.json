@@ -1,0 +1,102 @@
+{
+  "single": [
+    {
+      "id": "s1",
+      "type": "single",
+      "question": "Which HTML tag is used for the largest heading?",
+      "options": ["<h6>", "<heading>", "<h1>", "<head>"],
+      "answer": "<h1>"
+    },
+    {
+      "id": "s2",
+      "type": "single",
+      "question": "What does CSS stand for?",
+      "options": [
+        "Creative Style Syntax",
+        "Cascading Style Sheets",
+        "Computer Style System",
+        "Colorful Style Structure"
+      ],
+      "answer": "Cascading Style Sheets"
+    },
+    {
+      "id": "s3",
+      "type": "single",
+      "question": "Which method converts JSON string to JavaScript object?",
+      "options": ["JSON.stringify()", "JSON.parse()", "JSON.convert()", "JSON.objectify()"],
+      "answer": "JSON.parse()"
+    },
+    {
+      "id": "s4",
+      "type": "single",
+      "question": "Which CSS property changes text color?",
+      "options": ["font-color", "text-style", "color", "text-color"],
+      "answer": "color"
+    }
+  ],
+  "multiple": [
+    {
+      "id": "m1",
+      "type": "multiple",
+      "question": "Which of these are JavaScript data types?",
+      "options": ["String", "Boolean", "Selector", "Number"],
+      "answer": ["String", "Boolean", "Number"]
+    },
+    {
+      "id": "m2",
+      "type": "multiple",
+      "question": "Which tags are semantic HTML elements?",
+      "options": ["<article>", "<div>", "<section>", "<footer>"],
+      "answer": ["<article>", "<section>", "<footer>"]
+    },
+    {
+      "id": "m3",
+      "type": "multiple",
+      "question": "Which methods can be used on arrays?",
+      "options": ["map()", "push()", "querySelector()", "filter()"],
+      "answer": ["map()", "push()", "filter()"]
+    },
+    {
+      "id": "m4",
+      "type": "multiple",
+      "question": "Which statements about LocalStorage are true?",
+      "options": [
+        "Data is stored as strings",
+        "It works after page reload",
+        "Data is lost immediately on refresh",
+        "It can be accessed with localStorage API"
+      ],
+      "answer": [
+        "Data is stored as strings",
+        "It works after page reload",
+        "It can be accessed with localStorage API"
+      ]
+    }
+  ],
+  "text": [
+    {
+      "id": "t1",
+      "type": "text",
+      "question": "Write the CSS property used to make elements a flex container.",
+      "answer": "display: flex"
+    },
+    {
+      "id": "t2",
+      "type": "text",
+      "question": "Write the JavaScript keyword used to declare a constant variable.",
+      "answer": "const"
+    },
+    {
+      "id": "t3",
+      "type": "text",
+      "question": "Write the event name that fires when a button is clicked.",
+      "answer": "click"
+    },
+    {
+      "id": "t4",
+      "type": "text",
+      "question": "Write the browser API name used to save key-value data persistently.",
+      "answer": "localStorage"
+    }
+  ]
+}
