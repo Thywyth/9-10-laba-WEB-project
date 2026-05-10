@@ -17,6 +17,7 @@ const questionNavigationButtons = Array.from(document.querySelectorAll(".questio
 const userNameInput = document.getElementById("user-name-input");
 const userPasswordInput = document.getElementById("user-password-input");
 const startTestButton = document.getElementById("start-test-btn");
+const authMessage = document.getElementById("auth-message");
 const currentUserLabel = document.getElementById("current-user-label");
 const nextQuestionButton = document.getElementById("next-question-btn");
 const finishTestButton = document.getElementById("finish-test-btn");
@@ -108,7 +109,16 @@ function setQuizVisibility(isVisible) {
 
   if (userPanel) {
     userPanel.hidden = isVisible;
+    userPanel.style.display = isVisible ? "none" : "flex";
   }
+}
+
+function setAuthMessage(message) {
+  if (!authMessage) {
+    return;
+  }
+
+  authMessage.textContent = message;
 }
 
 function updateTimerText() {
@@ -458,23 +468,24 @@ function handleStartTest() {
     const enteredPassword = userPasswordInput.value.trim();
 
     if (!enteredName) {
-      alert("Введіть ім'я користувача перед початком тесту.");
+      setAuthMessage("Введіть ім'я користувача перед початком тесту.");
       return;
     }
 
     if (!enteredPassword) {
-      alert("Введіть пароль перед початком тесту.");
+      setAuthMessage("Введіть пароль перед початком тесту.");
       return;
     }
 
     const authResult = authenticateUser(enteredName, enteredPassword);
 
     if (!authResult.success) {
-      alert(authResult.message);
+      setAuthMessage(authResult.message);
       return;
     }
 
     currentUserName = enteredName;
+    setAuthMessage("");
 
     if (currentUserLabel) {
       currentUserLabel.textContent = `Поточний користувач: ${currentUserName}`;
