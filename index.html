@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WEB-project Test App</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="test-app">
+    <h1>Тестування знань</h1>
+
+    <nav class="question-navigation" aria-label="Навігація по питаннях">
+      <button type="button" class="question-number" data-index="0">1</button>
+      <button type="button" class="question-number" data-index="1">2</button>
+      <button type="button" class="question-number" data-index="2">3</button>
+      <button type="button" class="question-number" data-index="3">4</button>
+      <button type="button" class="question-number" data-index="4">5</button>
+      <button type="button" class="question-number" data-index="5">6</button>
+    </nav>
+
+    <section id="question-container" aria-live="polite">
+      <!-- Question content will be rendered here -->
+    </section>
+
+    <div class="test-controls">
+      <button type="button" id="next-question-btn">Наступне питання</button>
+      <button type="button" id="finish-test-btn" hidden>Завершити тест</button>
+    </div>
+
+    <section id="result-container" aria-live="polite">
+      <!-- Result information will be shown here -->
+    </section>
+  </main>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
