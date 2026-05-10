@@ -1,6 +1,7 @@
 const QUESTIONS_SOURCE = "data/questions.json";
 const QUESTIONS_PER_GROUP = 2;
 const RESULT_STORAGE_PREFIX = "quiz-last-result-";
+const USERS_STORAGE_KEY = "quiz-users-passwords";
 
 let selectedQuestions = [];
 let currentQuestionIndex = 0;
@@ -54,6 +55,46 @@ function formatDuration(totalSeconds) {
   const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
   const seconds = String(totalSeconds % 60).padStart(2, "0");
   return `${minutes}:${seconds}`;
+}
+
+function getStoredUsers() {
+  const rawUsers = localStorage.getItem(USERS_STORAGE_KEY);
+
+  if (!rawUsers) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(rawUsers);
+  } catch (error) {
+    return {};
+  }
+}
+
+function saveStoredUsers(users) {
+  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+}
+
+function authenticateUser(userName, password) {
+  const normalizedUserName = userName.trim().toLowerCase();
+  const users = getStoredUsers();
+  const existingPassword = users[normalizedUserName];
+
+  if (existingPassword && existingPassword !== password) {
+    return {
+      success: false,
+      message: "Неправильний пароль для цього імені користувача."
+    };
+  }
+
+  if (!existingPassword) {
+    users[normalizedUserName] = password;
+    saveStoredUsers(users);
+  }
+
+  return {
+    success: true
+  };
 }
 
 function getUserStorageKey() {
@@ -426,6 +467,13 @@ function handleStartTest() {
       return;
     }
 
+    const authResult = authenticateUser(enteredName, enteredPassword);
+
+    if (!authResult.success) {
+      alert(authResult.message);
+      return;
+    }
+
     currentUserName = enteredName;
 
     if (currentUserLabel) {
@@ -433,6 +481,7 @@ function handleStartTest() {
     }
 
     setQuizVisibility(true);
+    userPasswordInput.value = "";
     loadQuestions();
   });
 }
