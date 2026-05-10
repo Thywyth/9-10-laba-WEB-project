@@ -1,6 +1,6 @@
 const QUESTIONS_SOURCE = "data/questions.json";
 const QUESTIONS_PER_GROUP = 2;
-const RESULT_STORAGE_KEY = "quiz-last-result";
+const RESULT_STORAGE_PREFIX = "quiz-last-result-";
 
 let selectedQuestions = [];
 let currentQuestionIndex = 0;
@@ -9,8 +9,14 @@ const viewedQuestions = new Set();
 
 const questionContainer = document.getElementById("question-container");
 const resultContainer = document.getElementById("result-container");
+const quizContent = document.getElementById("quiz-content");
+const userPanel = document.getElementById("user-panel");
 const timerDisplay = document.getElementById("timer-display");
 const questionNavigationButtons = Array.from(document.querySelectorAll(".question-number"));
+const userNameInput = document.getElementById("user-name-input");
+const userPasswordInput = document.getElementById("user-password-input");
+const startTestButton = document.getElementById("start-test-btn");
+const currentUserLabel = document.getElementById("current-user-label");
 const nextQuestionButton = document.getElementById("next-question-btn");
 const finishTestButton = document.getElementById("finish-test-btn");
 const retryTestButton = document.getElementById("retry-test-btn");
@@ -18,6 +24,7 @@ const retryTestButton = document.getElementById("retry-test-btn");
 let timerId = null;
 let startedAt = null;
 let elapsedSeconds = 0;
+let currentUserName = "";
 
 function escapeHtml(value) {
   return String(value)
@@ -47,6 +54,20 @@ function formatDuration(totalSeconds) {
   const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
   const seconds = String(totalSeconds % 60).padStart(2, "0");
   return `${minutes}:${seconds}`;
+}
+
+function getUserStorageKey() {
+  return `${RESULT_STORAGE_PREFIX}${currentUserName.trim().toLowerCase()}`;
+}
+
+function setQuizVisibility(isVisible) {
+  if (quizContent) {
+    quizContent.hidden = !isVisible;
+  }
+
+  if (userPanel) {
+    userPanel.hidden = isVisible;
+  }
 }
 
 function updateTimerText() {
@@ -292,7 +313,7 @@ function showResult(currentScore) {
     return;
   }
 
-  const previousResultRaw = localStorage.getItem(RESULT_STORAGE_KEY);
+  const previousResultRaw = localStorage.getItem(getUserStorageKey());
   const previousResult = previousResultRaw ? JSON.parse(previousResultRaw) : null;
 
   const previousText = previousResult
@@ -300,6 +321,7 @@ function showResult(currentScore) {
     : "Немає попереднього результату";
 
   resultContainer.innerHTML = `
+    <p>Користувач: <strong>${escapeHtml(currentUserName)}</strong></p>
     <p>Поточний результат: <strong>${currentScore}/${selectedQuestions.length}</strong></p>
     <p>Час проходження: <strong>${formatDuration(elapsedSeconds)}</strong></p>
     <p>Попередній результат: <strong>${previousText}</strong></p>
@@ -308,6 +330,7 @@ function showResult(currentScore) {
 
 function saveResult(currentScore) {
   const resultData = {
+    user: currentUserName,
     score: currentScore,
     total: selectedQuestions.length,
     durationSeconds: elapsedSeconds,
@@ -315,7 +338,7 @@ function saveResult(currentScore) {
     date: new Date().toISOString()
   };
 
-  localStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(resultData));
+  localStorage.setItem(getUserStorageKey(), JSON.stringify(resultData));
   return resultData;
 }
 
@@ -368,6 +391,10 @@ function resetQuizState() {
   if (retryTestButton) {
     retryTestButton.hidden = true;
   }
+
+  if (finishTestButton) {
+    finishTestButton.hidden = true;
+  }
 }
 
 function handleRetryTest() {
@@ -376,6 +403,36 @@ function handleRetryTest() {
   }
 
   retryTestButton.addEventListener("click", () => {
+    loadQuestions();
+  });
+}
+
+function handleStartTest() {
+  if (!startTestButton || !userNameInput || !userPasswordInput) {
+    return;
+  }
+
+  startTestButton.addEventListener("click", () => {
+    const enteredName = userNameInput.value.trim();
+    const enteredPassword = userPasswordInput.value.trim();
+
+    if (!enteredName) {
+      alert("Введіть ім'я користувача перед початком тесту.");
+      return;
+    }
+
+    if (!enteredPassword) {
+      alert("Введіть пароль перед початком тесту.");
+      return;
+    }
+
+    currentUserName = enteredName;
+
+    if (currentUserLabel) {
+      currentUserLabel.textContent = `Поточний користувач: ${currentUserName}`;
+    }
+
+    setQuizVisibility(true);
     loadQuestions();
   });
 }
@@ -402,4 +459,4 @@ handleQuestionInput();
 handleQuestionNavigation();
 handleFinishTest();
 handleRetryTest();
-loadQuestions();
+handleStartTest();

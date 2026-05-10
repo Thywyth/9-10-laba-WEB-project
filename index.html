@@ -9,25 +9,36 @@
 <body>
   <main class="test-app">
     <h1>Тестування знань</h1>
-    <p id="timer-display" class="timer-display">Час проходження: 00:00</p>
-
-    <nav class="question-navigation" aria-label="Навігація по питаннях">
-      <button type="button" class="question-number" data-index="0">1</button>
-      <button type="button" class="question-number" data-index="1">2</button>
-      <button type="button" class="question-number" data-index="2">3</button>
-      <button type="button" class="question-number" data-index="3">4</button>
-      <button type="button" class="question-number" data-index="4">5</button>
-      <button type="button" class="question-number" data-index="5">6</button>
-    </nav>
-
-    <section id="question-container" aria-live="polite">
-      <!-- Question content will be rendered here -->
+    <section class="user-panel" id="user-panel">
+      <label for="user-name-input">Ім'я користувача:</label>
+      <input type="text" id="user-name-input" placeholder="Введіть ім'я" autocomplete="off">
+      <label for="user-password-input">Пароль:</label>
+      <input type="password" id="user-password-input" placeholder="Введіть пароль" autocomplete="off">
+      <button type="button" id="start-test-btn">Почати тест</button>
     </section>
 
-    <div class="test-controls">
-      <button type="button" id="next-question-btn">Наступне питання</button>
-      <button type="button" id="finish-test-btn" hidden>Завершити тест</button>
-      <button type="button" id="retry-test-btn" hidden>Пройти ще раз</button>
+    <div id="quiz-content" hidden>
+      <p id="current-user-label"></p>
+      <p id="timer-display" class="timer-display">Час проходження: 00:00</p>
+
+      <nav class="question-navigation" aria-label="Навігація по питаннях">
+        <button type="button" class="question-number" data-index="0">1</button>
+        <button type="button" class="question-number" data-index="1">2</button>
+        <button type="button" class="question-number" data-index="2">3</button>
+        <button type="button" class="question-number" data-index="3">4</button>
+        <button type="button" class="question-number" data-index="4">5</button>
+        <button type="button" class="question-number" data-index="5">6</button>
+      </nav>
+
+      <section id="question-container" aria-live="polite">
+        <!-- Question content will be rendered here -->
+      </section>
+
+      <div class="test-controls">
+        <button type="button" id="next-question-btn">Наступне питання</button>
+        <button type="button" id="finish-test-btn" hidden>Завершити тест</button>
+        <button type="button" id="retry-test-btn" hidden>Пройти ще раз</button>
+      </div>
     </div>
 
     <section id="result-container" aria-live="polite">
