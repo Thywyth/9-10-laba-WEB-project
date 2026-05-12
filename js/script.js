@@ -1,146 +1,122 @@
-const QUESTIONS_SOURCE = "data/questions.json";
-const QUESTIONS_PER_GROUP = 2;
-const RESULT_STORAGE_PREFIX = "quiz-last-result-";
-const USERS_STORAGE_KEY = "quiz-users-passwords";
+const QUESTIONS_URL = "data/questions.json";
+const PER_GROUP = 2;
+const LS_RESULT = "quiz-last-result-";
+const LS_USERS = "quiz-users-passwords";
 
-let selectedQuestions = [];
-let currentQuestionIndex = 0;
-const userAnswers = {};
-const viewedQuestions = new Set();
-
-const questionContainer = document.getElementById("question-container");
-const resultContainer = document.getElementById("result-container");
-const quizContent = document.getElementById("quiz-content");
-const userPanel = document.getElementById("user-panel");
-const timerDisplay = document.getElementById("timer-display");
-const questionNavigationButtons = Array.from(document.querySelectorAll(".question-number"));
-const userNameInput = document.getElementById("user-name-input");
-const userPasswordInput = document.getElementById("user-password-input");
-const startTestButton = document.getElementById("start-test-btn");
-const authMessage = document.getElementById("auth-message");
-const currentUserLabel = document.getElementById("current-user-label");
-const nextQuestionButton = document.getElementById("next-question-btn");
-const finishTestButton = document.getElementById("finish-test-btn");
-const retryTestButton = document.getElementById("retry-test-btn");
-
+let questions = [];
+let index = 0;
+const answers = {};
+let userName = "";
 let timerId = null;
-let startedAt = null;
-let elapsedSeconds = 0;
-let currentUserName = "";
+let timerStart = 0;
+let seconds = 0;
 
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+const el = {
+  question: document.getElementById("question-container"),
+  result: document.getElementById("result-container"),
+  quiz: document.getElementById("quiz-content"),
+  panel: document.getElementById("user-panel"),
+  timer: document.getElementById("timer-display"),
+  nav: Array.from(document.querySelectorAll(".question-number")),
+  name: document.getElementById("user-name-input"),
+  pass: document.getElementById("user-password-input"),
+  start: document.getElementById("start-test-btn"),
+  authMsg: document.getElementById("auth-message"),
+  userLabel: document.getElementById("current-user-label"),
+  next: document.getElementById("next-question-btn"),
+  finish: document.getElementById("finish-test-btn"),
+  retry: document.getElementById("retry-test-btn")
+};
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
 }
 
-function shuffleArray(items) {
-  const array = [...items];
-
-  for (let i = array.length - 1; i > 0; i -= 1) {
-    const randomIndex = Math.floor(Math.random() * (i + 1));
-    [array[i], array[randomIndex]] = [array[randomIndex], array[i]];
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
   }
-
-  return array;
+  return a;
 }
 
-function pickRandomQuestions(group, amount) {
-  return shuffleArray(group).slice(0, amount);
+function pick(group, n) {
+  return shuffle(group).slice(0, n);
 }
 
-function formatDuration(totalSeconds) {
-  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
-  const seconds = String(totalSeconds % 60).padStart(2, "0");
-  return `${minutes}:${seconds}`;
+function buildSet(data) {
+  return shuffle([
+    ...pick(data.single, PER_GROUP),
+    ...pick(data.multiple, PER_GROUP),
+    ...pick(data.text, PER_GROUP)
+  ]);
 }
 
-function getStoredUsers() {
-  const rawUsers = localStorage.getItem(USERS_STORAGE_KEY);
+function formatTime(sec) {
+  const m = String(Math.floor(sec / 60)).padStart(2, "0");
+  const s = String(sec % 60).padStart(2, "0");
+  return `${m}:${s}`;
+}
 
-  if (!rawUsers) {
-    return {};
-  }
+function resultKey() {
+  return LS_RESULT + userName.trim().toLowerCase();
+}
 
+function readUsers() {
   try {
-    return JSON.parse(rawUsers);
-  } catch (error) {
+    return JSON.parse(localStorage.getItem(LS_USERS) || "{}");
+  } catch {
     return {};
   }
 }
 
-function saveStoredUsers(users) {
-  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+function writeUsers(users) {
+  localStorage.setItem(LS_USERS, JSON.stringify(users));
 }
 
-function authenticateUser(userName, password) {
-  const normalizedUserName = userName.trim().toLowerCase();
-  const users = getStoredUsers();
-  const existingPassword = users[normalizedUserName];
+/** Повертає null якщо ОК, інакше текст помилки */
+function checkLogin(name, password) {
+  const key = name.trim().toLowerCase();
+  const users = readUsers();
+  const saved = users[key];
 
-  if (existingPassword && existingPassword !== password) {
-    return {
-      success: false,
-      message: "Неправильний пароль для цього імені користувача."
-    };
+  if (saved && saved !== password) {
+    return "Неправильний пароль для цього імені користувача.";
   }
-
-  if (!existingPassword) {
-    users[normalizedUserName] = password;
-    saveStoredUsers(users);
+  if (!saved) {
+    users[key] = password;
+    writeUsers(users);
   }
-
-  return {
-    success: true
-  };
+  return null;
 }
 
-function getUserStorageKey() {
-  return `${RESULT_STORAGE_PREFIX}${currentUserName.trim().toLowerCase()}`;
-}
-
-function setQuizVisibility(isVisible) {
-  if (quizContent) {
-    quizContent.hidden = !isVisible;
-  }
-
-  if (userPanel) {
-    userPanel.hidden = isVisible;
-    userPanel.style.display = isVisible ? "none" : "flex";
+function showPanel(showForm) {
+  if (el.quiz) el.quiz.hidden = !showForm;
+  if (el.panel) {
+    el.panel.hidden = showForm;
+    el.panel.style.display = showForm ? "none" : "flex";
   }
 }
 
-function setAuthMessage(message) {
-  if (!authMessage) {
-    return;
-  }
-
-  authMessage.textContent = message;
+function setAuth(text) {
+  if (el.authMsg) el.authMsg.textContent = text || "";
 }
 
-function updateTimerText() {
-  if (!timerDisplay) {
-    return;
-  }
-
-  timerDisplay.textContent = `Час проходження: ${formatDuration(elapsedSeconds)}`;
+function tickTimer() {
+  if (el.timer) el.timer.textContent = `Час проходження: ${formatTime(seconds)}`;
 }
 
 function startTimer() {
-  if (timerId) {
-    clearInterval(timerId);
-  }
-
-  startedAt = Date.now();
-  elapsedSeconds = 0;
-  updateTimerText();
-
+  if (timerId) clearInterval(timerId);
+  timerStart = Date.now();
+  seconds = 0;
+  tickTimer();
   timerId = setInterval(() => {
-    elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
-    updateTimerText();
+    seconds = Math.floor((Date.now() - timerStart) / 1000);
+    tickTimer();
   }, 1000);
 }
 
@@ -149,374 +125,211 @@ function stopTimer() {
     clearInterval(timerId);
     timerId = null;
   }
-
-  elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
-  updateTimerText();
+  seconds = Math.floor((Date.now() - timerStart) / 1000);
+  tickTimer();
 }
 
-function buildFinalQuestionSet(questionGroups) {
-  const singleQuestions = pickRandomQuestions(questionGroups.single, QUESTIONS_PER_GROUP);
-  const multipleQuestions = pickRandomQuestions(questionGroups.multiple, QUESTIONS_PER_GROUP);
-  const textQuestions = pickRandomQuestions(questionGroups.text, QUESTIONS_PER_GROUP);
+function choiceHtml(q, num, type) {
+  const saved = answers[q.id];
+  const checkedList = Array.isArray(saved) ? saved : [];
 
-  return shuffleArray([...singleQuestions, ...multipleQuestions, ...textQuestions]);
-}
+  const opts = q.options
+    .map((opt, i) => {
+      const id = `q-${q.id}-${i}`;
+      const safe = escapeHtml(opt);
+      const checked =
+        type === "radio"
+          ? saved === opt
+            ? "checked"
+            : ""
+          : checkedList.includes(opt)
+            ? "checked"
+            : "";
 
-function createSingleChoiceMarkup(question, questionNumber) {
-  const savedAnswer = userAnswers[question.id];
-  const optionsMarkup = question.options
-    .map((option, optionIndex) => {
-      const optionId = `q-${question.id}-single-${optionIndex}`;
-      const isChecked = savedAnswer === option ? "checked" : "";
-      const safeOption = escapeHtml(option);
-
-      return `
-        <label for="${optionId}">
-          <input type="radio" id="${optionId}" name="question-${question.id}" value="${safeOption}" ${isChecked}>
-          ${safeOption}
-        </label>
-      `;
+      return `<label for="${id}"><input type="${type}" id="${id}" name="q-${q.id}" value="${safe}" ${checked}> ${safe}</label>`;
     })
     .join("");
 
   return `
-    <h2>Питання ${questionNumber}</h2>
-    <p>${escapeHtml(question.question)}</p>
-    <div>${optionsMarkup}</div>
+    <h2>Питання ${num}</h2>
+    <p>${escapeHtml(q.question)}</p>
+    <div>${opts}</div>
   `;
 }
 
-function createMultipleChoiceMarkup(question, questionNumber) {
-  const savedAnswers = Array.isArray(userAnswers[question.id]) ? userAnswers[question.id] : [];
-  const optionsMarkup = question.options
-    .map((option, optionIndex) => {
-      const optionId = `q-${question.id}-multiple-${optionIndex}`;
-      const isChecked = savedAnswers.includes(option) ? "checked" : "";
-      const safeOption = escapeHtml(option);
-
-      return `
-        <label for="${optionId}">
-          <input type="checkbox" id="${optionId}" name="question-${question.id}" value="${safeOption}" ${isChecked}>
-          ${safeOption}
-        </label>
-      `;
-    })
-    .join("");
-
+function textHtml(q, num) {
+  const val = escapeHtml(answers[q.id] || "");
   return `
-    <h2>Питання ${questionNumber}</h2>
-    <p>${escapeHtml(question.question)}</p>
-    <div>${optionsMarkup}</div>
+    <h2>Питання ${num}</h2>
+    <p>${escapeHtml(q.question)}</p>
+    <label for="t-${q.id}">Ваша відповідь:</label>
+    <input type="text" id="t-${q.id}" name="q-${q.id}" autocomplete="off" value="${val}">
   `;
 }
 
-function createTextMarkup(question, questionNumber) {
-  const savedAnswer = userAnswers[question.id] || "";
+function updateNavButtons() {
+  el.nav.forEach((btn, i) => btn.classList.toggle("is-active", i === index));
+}
 
-  return `
-    <h2>Питання ${questionNumber}</h2>
-    <p>${escapeHtml(question.question)}</p>
-    <label for="q-${question.id}-text">Ваша відповідь:</label>
-    <input type="text" id="q-${question.id}-text" name="question-${question.id}" autocomplete="off" value="${escapeHtml(savedAnswer)}">
+function updateButtons() {
+  const last = index === questions.length - 1;
+  if (el.finish) el.finish.hidden = !last;
+  if (el.next) el.next.hidden = last;
+}
+
+function render() {
+  const q = questions[index];
+  if (!q || !el.question) return;
+
+  const n = index + 1;
+  if (q.type === "single") el.question.innerHTML = choiceHtml(q, n, "radio");
+  else if (q.type === "multiple") el.question.innerHTML = choiceHtml(q, n, "checkbox");
+  else el.question.innerHTML = textHtml(q, n);
+
+  updateNavButtons();
+  updateButtons();
+}
+
+function sameSet(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+  const x = [...a].sort().join("\0");
+  const y = [...b].sort().join("\0");
+  return x === y;
+}
+
+function correct(q, userVal) {
+  if (q.type === "multiple") return sameSet(Array.isArray(userVal) ? userVal : [], q.answer);
+  if (q.type === "text")
+    return String(userVal || "").trim().toLowerCase() === String(q.answer).trim().toLowerCase();
+  return userVal === q.answer;
+}
+
+function score() {
+  return questions.reduce((s, q) => s + (correct(q, answers[q.id]) ? 1 : 0), 0);
+}
+
+function showResults(points) {
+  if (!el.result) return;
+
+  let prev = "Немає попереднього результату";
+  const raw = localStorage.getItem(resultKey());
+  if (raw) {
+    const p = JSON.parse(raw);
+    prev = `${p.score}/${p.total} (час: ${p.durationFormatted})`;
+  }
+
+  el.result.innerHTML = `
+    <p>Користувач: <strong>${escapeHtml(userName)}</strong></p>
+    <p>Поточний результат: <strong>${points}/${questions.length}</strong></p>
+    <p>Час проходження: <strong>${formatTime(seconds)}</strong></p>
+    <p>Попередній результат: <strong>${prev}</strong></p>
   `;
 }
 
-function updateNavigationState() {
-  questionNavigationButtons.forEach((button, index) => {
-    const isActive = index === currentQuestionIndex;
-    button.classList.toggle("is-active", isActive);
-  });
-}
-
-function updateFinishButtonVisibility() {
-  const onLastQuestion = currentQuestionIndex === selectedQuestions.length - 1;
-
-  if (finishTestButton) {
-    finishTestButton.hidden = !onLastQuestion;
-  }
-
-  if (!nextQuestionButton) {
-    return;
-  }
-
-  nextQuestionButton.hidden = onLastQuestion;
-}
-
-function renderQuestion(index) {
-  const question = selectedQuestions[index];
-
-  if (!question || !questionContainer) {
-    return;
-  }
-
-  const questionNumber = index + 1;
-  let markup = "";
-
-  if (question.type === "single") {
-    markup = createSingleChoiceMarkup(question, questionNumber);
-  } else if (question.type === "multiple") {
-    markup = createMultipleChoiceMarkup(question, questionNumber);
-  } else {
-    markup = createTextMarkup(question, questionNumber);
-  }
-
-  questionContainer.innerHTML = markup;
-  viewedQuestions.add(index);
-  updateNavigationState();
-  updateFinishButtonVisibility();
-}
-
-function handleQuestionInput() {
-  if (!questionContainer) {
-    return;
-  }
-
-  questionContainer.addEventListener("change", () => {
-    const question = selectedQuestions[currentQuestionIndex];
-
-    if (!question) {
-      return;
-    }
-
-    if (question.type === "single") {
-      const selectedOption = questionContainer.querySelector(`input[name="question-${question.id}"]:checked`);
-      userAnswers[question.id] = selectedOption ? selectedOption.value : "";
-    }
-
-    if (question.type === "multiple") {
-      const selectedOptions = Array.from(
-        questionContainer.querySelectorAll(`input[name="question-${question.id}"]:checked`)
-      ).map((item) => item.value);
-
-      userAnswers[question.id] = selectedOptions;
-    }
-  });
-
-  questionContainer.addEventListener("input", () => {
-    const question = selectedQuestions[currentQuestionIndex];
-
-    if (!question || question.type !== "text") {
-      return;
-    }
-
-    const textInput = questionContainer.querySelector(`input[name="question-${question.id}"]`);
-    userAnswers[question.id] = textInput ? textInput.value.trim() : "";
-  });
-}
-
-function handleQuestionNavigation() {
-  questionNavigationButtons.forEach((button, index) => {
-    button.addEventListener("click", () => {
-      currentQuestionIndex = index;
-      renderQuestion(currentQuestionIndex);
-    });
-  });
-
-  if (nextQuestionButton) {
-    nextQuestionButton.addEventListener("click", () => {
-      const nextIndex = currentQuestionIndex + 1;
-
-      if (nextIndex >= selectedQuestions.length) {
-        return;
-      }
-
-      currentQuestionIndex = nextIndex;
-      renderQuestion(currentQuestionIndex);
-    });
-  }
-}
-
-function areArraysEqual(first, second) {
-  if (!Array.isArray(first) || !Array.isArray(second) || first.length !== second.length) {
-    return false;
-  }
-
-  const firstSorted = [...first].sort();
-  const secondSorted = [...second].sort();
-
-  return firstSorted.every((item, index) => item === secondSorted[index]);
-}
-
-function isAnswerCorrect(question, userAnswer) {
-  if (question.type === "multiple") {
-    const selected = Array.isArray(userAnswer) ? userAnswer : [];
-    return areArraysEqual(selected, question.answer);
-  }
-
-  if (question.type === "text") {
-    const normalizedUserAnswer = String(userAnswer || "").trim().toLowerCase();
-    const normalizedCorrectAnswer = String(question.answer).trim().toLowerCase();
-    return normalizedUserAnswer === normalizedCorrectAnswer;
-  }
-
-  return userAnswer === question.answer;
-}
-
-function calculateScore() {
-  return selectedQuestions.reduce((score, question) => {
-    const userAnswer = userAnswers[question.id];
-    return isAnswerCorrect(question, userAnswer) ? score + 1 : score;
-  }, 0);
-}
-
-function showResult(currentScore) {
-  if (!resultContainer) {
-    return;
-  }
-
-  const previousResultRaw = localStorage.getItem(getUserStorageKey());
-  const previousResult = previousResultRaw ? JSON.parse(previousResultRaw) : null;
-
-  const previousText = previousResult
-    ? `${previousResult.score}/${previousResult.total} (час: ${previousResult.durationFormatted})`
-    : "Немає попереднього результату";
-
-  resultContainer.innerHTML = `
-    <p>Користувач: <strong>${escapeHtml(currentUserName)}</strong></p>
-    <p>Поточний результат: <strong>${currentScore}/${selectedQuestions.length}</strong></p>
-    <p>Час проходження: <strong>${formatDuration(elapsedSeconds)}</strong></p>
-    <p>Попередній результат: <strong>${previousText}</strong></p>
-  `;
-}
-
-function saveResult(currentScore) {
-  const resultData = {
-    user: currentUserName,
-    score: currentScore,
-    total: selectedQuestions.length,
-    durationSeconds: elapsedSeconds,
-    durationFormatted: formatDuration(elapsedSeconds),
+function saveAndExport(points) {
+  const data = {
+    user: userName,
+    score: points,
+    total: questions.length,
+    durationSeconds: seconds,
+    durationFormatted: formatTime(seconds),
     date: new Date().toISOString()
   };
+  localStorage.setItem(resultKey(), JSON.stringify(data));
 
-  localStorage.setItem(getUserStorageKey(), JSON.stringify(resultData));
-  return resultData;
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "result.json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  return data;
 }
 
-function exportResultToJson(resultData) {
-  const jsonString = JSON.stringify(resultData, null, 2);
-  const blob = new Blob([jsonString], { type: "application/json" });
-  const downloadUrl = URL.createObjectURL(blob);
-
-  const link = document.createElement("a");
-  link.href = downloadUrl;
-  link.download = "result.json";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-
-  URL.revokeObjectURL(downloadUrl);
+function resetRound() {
+  index = 0;
+  Object.keys(answers).forEach((k) => delete answers[k]);
+  if (el.result) el.result.innerHTML = "";
+  if (el.retry) el.retry.hidden = true;
+  if (el.finish) el.finish.hidden = true;
 }
 
-function handleFinishTest() {
-  if (!finishTestButton) {
-    return;
+el.question?.addEventListener("change", () => {
+  const q = questions[index];
+  if (!q) return;
+  if (q.type === "single") {
+    const inp = el.question.querySelector(`input[name="q-${q.id}"]:checked`);
+    answers[q.id] = inp ? inp.value : "";
   }
+  if (q.type === "multiple") {
+    answers[q.id] = Array.from(el.question.querySelectorAll(`input[name="q-${q.id}"]:checked`)).map((i) => i.value);
+  }
+});
 
-  finishTestButton.addEventListener("click", () => {
-    stopTimer();
-    const currentScore = calculateScore();
-    showResult(currentScore);
-    const resultData = saveResult(currentScore);
-    exportResultToJson(resultData);
+el.question?.addEventListener("input", () => {
+  const q = questions[index];
+  if (!q || q.type !== "text") return;
+  const inp = el.question.querySelector(`input[name="q-${q.id}"]`);
+  answers[q.id] = inp ? inp.value.trim() : "";
+});
 
-    finishTestButton.hidden = true;
-    if (nextQuestionButton) {
-      nextQuestionButton.hidden = true;
-    }
-    if (retryTestButton) {
-      retryTestButton.hidden = false;
-    }
+el.nav.forEach((btn, i) => {
+  btn.addEventListener("click", () => {
+    index = i;
+    render();
   });
-}
+});
 
-function resetQuizState() {
-  currentQuestionIndex = 0;
-  viewedQuestions.clear();
-  Object.keys(userAnswers).forEach((key) => delete userAnswers[key]);
-
-  if (resultContainer) {
-    resultContainer.innerHTML = "";
+el.next?.addEventListener("click", () => {
+  if (index + 1 < questions.length) {
+    index += 1;
+    render();
   }
+});
 
-  if (retryTestButton) {
-    retryTestButton.hidden = true;
-  }
+el.finish?.addEventListener("click", () => {
+  stopTimer();
+  const points = score();
+  showResults(points);
+  saveAndExport(points);
+  if (el.finish) el.finish.hidden = true;
+  if (el.next) el.next.hidden = true;
+  if (el.retry) el.retry.hidden = false;
+});
 
-  if (finishTestButton) {
-    finishTestButton.hidden = true;
-  }
-}
+el.retry?.addEventListener("click", () => loadQuiz());
 
-function handleRetryTest() {
-  if (!retryTestButton) {
-    return;
-  }
+el.start?.addEventListener("click", () => {
+  const name = el.name.value.trim();
+  const pass = el.pass.value.trim();
 
-  retryTestButton.addEventListener("click", () => {
-    loadQuestions();
-  });
-}
+  if (!name) return setAuth("Введіть ім'я користувача перед початком тесту.");
+  if (!pass) return setAuth("Введіть пароль перед початком тесту.");
 
-function handleStartTest() {
-  if (!startTestButton || !userNameInput || !userPasswordInput) {
-    return;
-  }
+  const err = checkLogin(name, pass);
+  if (err) return setAuth(err);
 
-  startTestButton.addEventListener("click", () => {
-    const enteredName = userNameInput.value.trim();
-    const enteredPassword = userPasswordInput.value.trim();
+  userName = name;
+  setAuth("");
+  el.pass.value = "";
+  if (el.userLabel) el.userLabel.textContent = `Поточний користувач: ${userName}`;
 
-    if (!enteredName) {
-      setAuthMessage("Введіть ім'я користувача перед початком тесту.");
-      return;
-    }
+  showPanel(true);
+  loadQuiz();
+});
 
-    if (!enteredPassword) {
-      setAuthMessage("Введіть пароль перед початком тесту.");
-      return;
-    }
-
-    const authResult = authenticateUser(enteredName, enteredPassword);
-
-    if (!authResult.success) {
-      setAuthMessage(authResult.message);
-      return;
-    }
-
-    currentUserName = enteredName;
-    setAuthMessage("");
-
-    if (currentUserLabel) {
-      currentUserLabel.textContent = `Поточний користувач: ${currentUserName}`;
-    }
-
-    setQuizVisibility(true);
-    userPasswordInput.value = "";
-    loadQuestions();
-  });
-}
-
-async function loadQuestions() {
+async function loadQuiz() {
   try {
-    const response = await fetch(QUESTIONS_SOURCE);
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch questions: ${response.status}`);
-    }
-
-    const questionGroups = await response.json();
-    selectedQuestions = buildFinalQuestionSet(questionGroups);
-    resetQuizState();
-    renderQuestion(currentQuestionIndex);
+    const res = await fetch(QUESTIONS_URL);
+    if (!res.ok) throw new Error(res.status);
+    questions = buildSet(await res.json());
+    resetRound();
+    render();
     startTimer();
-  } catch (error) {
-    console.error("Unable to load questions.", error);
+  } catch (e) {
+    console.error(e);
   }
 }
-
-handleQuestionInput();
-handleQuestionNavigation();
-handleFinishTest();
-handleRetryTest();
-handleStartTest();
